@@ -1,0 +1,6 @@
+{
+  "name": "Nexus AI",
+  "description": "Premium autonomous multi-agent workspace and intelligence marketplace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

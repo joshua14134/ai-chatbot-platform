@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: nexus_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: nexus_chatbot
+      MYSQL_USER: nexus_user
+      MYSQL_PASSWORD: nexus_secure_password
+      MYSQL_ROOT_PASSWORD: nexus_root_secure_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: nexus_chromadb
+    restart: always
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSISTENT_DIR=/chroma/chroma
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: nexus_ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexus_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://nexus_user:nexus_secure_password@db/nexus_chatbot
+      - SECRET_KEY=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      - JWT_SECRET=09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      - OLLAMA_URL=http://ollama:11434
+      - CHROMA_SERVER_HOST=chroma
+      - CHROMA_SERVER_PORT=8000
+      - GROQ_API_KEY=${GROQ_API_KEY:-your_groq_api_key_here}
+    depends_on:
+      db:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+      ollama:
+        condition: service_started
+
+volumes:
+  mysql_data:
+  chroma_data:
+  ollama_data:
